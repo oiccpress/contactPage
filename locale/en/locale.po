@@ -1,0 +1,23 @@
+msgid "plugins.generic.contactForm.sendEnquiry"
+msgstr "Send Enquiry"
+
+msgid "plugins.generic.contactForm.name"
+msgstr "Your Name"
+
+msgid "plugins.generic.contactForm.required"
+msgstr "(Required)"
+
+msgid "plugins.generic.contactForm.email"
+msgstr "Your Email"
+
+msgid "plugins.generic.contactForm.subject"
+msgstr "Subject"
+
+msgid "plugins.generic.contactForm.message"
+msgstr "Message"
+
+msgid "plugins.generic.contactForm.submitted"
+msgstr "Your message has been sent"
+
+msgid "plugins.generic.contactForm.submittedText"
+msgstr "Thank you for contacting us with your enquiry"
