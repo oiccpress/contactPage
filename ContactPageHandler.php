@@ -47,7 +47,7 @@ class ContactPageHandler extends Handler {
         }
         $emlBody[] = '</table><p>Email sent from OJS in an automated fashion</p>';
 
-        $eml = $context->getContactEmail();
+        $eml = $context->getData('contactFormEmail') ?? $context->getContactEmail();
         $mailable = new ContactMailable([
             'context' => $context
         ]);
