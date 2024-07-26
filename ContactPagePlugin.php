@@ -14,8 +14,11 @@
 
 namespace APP\plugins\generic\contactPage;
 
+use APP\core\Services;
+use Illuminate\Support\Facades\DB;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
+use PKP\services\PKPSchemaService;
 
 class ContactPagePlugin extends GenericPlugin {
 
@@ -25,15 +28,51 @@ class ContactPagePlugin extends GenericPlugin {
 
         if ($success && $this->getEnabled()) {
             Hook::add( 'BlockPages::blocks', [ $this, 'blockConfigs' ] );
-            Hook::add('TemplateResource::getFilename', [$this, '_overridePluginTemplates']);
-            Hook::add('LoadHandler', [$this, 'setPageHandler']);
+            Hook::add( 'TemplateResource::getFilename', [$this, '_overridePluginTemplates'] );
+            Hook::add( 'LoadHandler', [$this, 'setPageHandler'] );
 
             Hook::add( 'Form::config::after', [$this, 'contextSettings'] );
             Hook::add( 'Schema::get::context', [ $this, 'addToContextSchema' ] );
             Hook::add( 'Context::edit', [ $this, 'editContext' ] );
+
+            Hook::add( 'Schema::get::site', [ $this, 'addToContextSchema' ] );
+            Hook::add( 'Site::edit', [ $this, 'editContext' ] );
+
+            Hook::add( 'ContactForm::subject', [ $this, 'subjectTemplate' ] );
         }
 
         return $success;
+    
+    }
+
+    public function directGetSiteSetting(string $settingName)
+    {
+        $r = DB::selectOne('SELECT * FROM site_settings WHERE setting_name = ?', [ $settingName ]);
+        if($r) {
+            return $r->setting_value;
+        } else {
+            return null;
+        }
+    }
+
+    public function subjectTemplate(string $hookName, array $args) : bool
+    {
+
+        $templateMgr = &$args[1];
+
+        $context = $this->getRequest()->getContext();
+        if($context) {
+            $value = $context->getData('contactFormSubject');
+        } else {
+            $value = $this->directGetSiteSetting('contactFormSubject');
+        }
+
+        if($value) {
+            $templateMgr->assign('subjects', explode("\n", $value));
+        }
+
+        return false;
+
     }
 
     // Add the journal stats to the schema return
@@ -42,6 +81,13 @@ class ContactPagePlugin extends GenericPlugin {
         $schema = &$args[0];
 
         $schema->properties->{"contactFormEmail"} = (object)[
+            'type' => 'string',
+            'multilingual' => false,
+            'apiSummary' => true,
+            'validation' => ['nullable'],
+        ];
+
+        $schema->properties->{"contactFormSubject"} = (object)[
             'type' => 'string',
             'multilingual' => false,
             'apiSummary' => true,
@@ -58,8 +104,15 @@ class ContactPagePlugin extends GenericPlugin {
         $context = $args[0];
         $params = $args[2];
 
+        $schemaService = Services::get('schema');
+        $schemaService->get(PKPSchemaService::SCHEMA_SITE, true);
+
         if(isset($params['contactFormEmail'])) {
             $context->setData( 'contactFormEmail', $params['contactFormEmail'] );
+        }
+
+        if(isset($params['contactFormSubject'])) {
+            $context->setData( 'contactFormSubject', $params['contactFormSubject'] );
         }
 
     }
@@ -68,20 +121,31 @@ class ContactPagePlugin extends GenericPlugin {
     public function contextSettings( $hookName, &$args )
     {
         $config = &$args[0];
-        if($config['id'] == 'masthead') {
+        if($config['id'] == 'masthead' || $config['id'] == 'siteConfig') {
 
             $context = $this->getRequest()->getContext();
 
-            $value = $context->getData('contactFormEmail') ?? '';
+            $value = $context ? $context->getData('contactFormEmail') : $this->directGetSiteSetting('contactFormEmail');
 
             $config['fields'][] = [
                 'name' => 'contactFormEmail',
                 'component' => 'field-text',
                 'label' => 'Contact Form Email',
-                'groupId' => 'identity',
+                'groupId' => $config['id'] === 'masthead' ? 'identity' : 'default',
                 'value' => $value,
                 'inputType' => 'text',
             ];
+
+            $value = $context ? $context->getData('contactFormSubject') : $this->directGetSiteSetting('contactFormSubject');
+
+            $config['fields'][] = [
+                'name' => 'contactFormSubject',
+                'component' => 'field-textarea',
+                'label' => 'Contact Form Subjects',
+                'groupId' => $config['id'] === 'masthead' ? 'identity' : 'default',
+                'value' => $value,
+                'inputType' => 'textarea',
+            ];  
 
         }
     }

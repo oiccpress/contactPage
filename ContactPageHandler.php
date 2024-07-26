@@ -47,10 +47,17 @@ class ContactPageHandler extends Handler {
         }
         $emlBody[] = '</table><p>Email sent from OJS in an automated fashion</p>';
 
-        $eml = $context->getData('contactFormEmail') ?? $context->getContactEmail();
-        $mailable = new ContactMailable([
-            'context' => $context
-        ]);
+        if($context) {
+            $eml = $context->getData('contactFormEmail') ?? $context->getContactEmail();
+            $mailable = new ContactMailable([
+                'context' => $context
+            ]);
+        } else {
+            $eml = $this->plugin->directGetSiteSetting('contactFormEmail');
+            $mailable = new ContactMailable([
+            ]);
+        }
+        
         $mailable->from( $eml, 'Journal Admin' )->to( $eml )
             ->subject('Contact Form Submission')
             ->body( implode("\n",$emlBody) );

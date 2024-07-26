@@ -16,11 +16,22 @@
             </label>
             <input class="form-control" type="email" name="email" id="email" required />
 
+            {call_hook name="ContactForm::subject"}
+
             <label class="d-block mt-3" for="subject">
                 {translate key="plugins.generic.contactForm.subject"}
                 <span class="text-danger required">{translate key="plugins.generic.contactForm.required"}</span>
             </label>
-            <input class="form-control" type="text" name="subject" id="subject" required />
+            {if $subjects}
+                <select class="form-control" name="subject" id="subject" required>
+                    {foreach from=$subjects item=$subject}
+                        <option>{$subject}</option>
+                    {/foreach}
+                </select>
+            {else}
+                <input class="form-control" type="text" name="subject" id="subject" required />
+            {/if}
+
 
             <label class="d-block mt-3" for="message">
                 {translate key="plugins.generic.contactForm.message"}
